@@ -4,7 +4,7 @@ import pandas as pd
 from datetime import date
 from datetime import timedelta
 from time import sleep
-
+import random
 
 # Start and end dates must be actual dates: Example: start_date = Date(2016, 10, 28)
 def generate_date_strings(start_date, end_date):
@@ -121,9 +121,9 @@ def populate_player_and_team_data(start_date, end_date):
 
 	for ds in date_strings:
 
-		ds_year = ds[:4]
-		ds_month = ds[4:6]
-		ds_day = ds[6:]
+		ds_year = int(ds[:4])
+		ds_month = int(ds[4:6])
+		ds_day = int(ds[6:])
 
 		for abbr in team_abbreviations:
 		# for abbr in ['CLE', 'POR', 'GSW']: # For testing with 10/25/2016
@@ -234,7 +234,6 @@ def populate_player_and_team_data(start_date, end_date):
 				player_stats = player_stats.append(player_stats_team_1)
 				player_stats = player_stats.append(player_stats_team_2)
 
-
 				# Handle team total stats
 				team_1_stats = all_stats_team_1.iloc[-1:]
 				team_2_stats = all_stats_team_2.iloc[-1:]
@@ -246,12 +245,15 @@ def populate_player_and_team_data(start_date, end_date):
 				team_stats = team_stats.append(team_1_stats)
 				team_stats = team_stats.append(team_2_stats)
 
-				sleep(0.5)
+
+				sleep(random.uniform(0.5, 2.0))
 
 			except:
 
-				sleep(0.5)
+				sleep(random.uniform(0.5, 2.0))
 				continue
+				
+		print(len(player_stats), len(team_stats))
 
 	print(game_count, "Games Processed")
 	return player_stats, team_stats
