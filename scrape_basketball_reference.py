@@ -6,6 +6,7 @@ from datetime import timedelta
 from time import sleep
 import random
 
+
 # Start and end dates must be actual dates: Example: start_date = Date(2016, 10, 28)
 def generate_date_strings(start_date, end_date):
 
@@ -52,18 +53,24 @@ team_abbreviations=['ATL',
 					'UTA',
 					'WAS']
 
-# Start and end dates must be actual dates: Example: start_date = Date(2016, 10, 28)
-def base_scrape_training_data(start_date, end_date):
+# For each game, get the date, names of both teams, and players for both teams
+# Can use this informaiton with the player and team scraped data to generate features
+def scrape_game_overview_data(start_date, end_date, year):
 
 	base_url_string = 'http://www.basketball-reference.com/boxscores/'
-
 	date_strings = generate_date_strings(start_date, end_date)
 
-	# Generate each possible string with all 30 teams. Teams that don't have a game that day will just be pass over with try, except
-	# TODO: Possibly find a cleaner way to do this
+	# List of dictionaries, each one representing a game with keys 'Date', 'Team_1', 'Team_2', 'Team_1_Players', 'Team_2_Players'
+	# Each game represents two features, one for each team, and two output values (win/loss or point differential)
+		# Might be good to have "other team" feature values as predictor to account for strength of opponent
+	game_list = []
 
 
 	for ds in date_strings:
+
+		ds_year = int(ds[:4])
+		ds_month = int(ds[4:6])
+		ds_day = int(ds[6:])
 
 		for abbr in team_abbreviations:
 
@@ -73,35 +80,97 @@ def base_scrape_training_data(start_date, end_date):
 				soup = BeautifulSoup(urlopen(url_to_try), 'lxml')
 				print("Found game with", abbr, "on " + ds)
 
-				column_headers = [th.getText() for th in soup.findAll('tr', limit=2)[1].findAll('th')]
-				# Ignore first two rows of descriptors
-				data_rows = soup.findAll('tr')[2:]
-				# Get name of player then all data
-				player_data = [[data_rows[i].findAll('th')[0].getText()] + [td.getText() for td in data_rows[i].findAll('td')] 
-								for i in range(len(data_rows))]
+				# Get all the data rows from the webpage in bs4.Tag form
+				data_rows = soup.findAll('tr')
+				# Get the main stat column headers
+				main_stat_column_headers = [th.getText() for th in data_rows[1].findAll('th')]
+				# Get the advanced stat column headers
+				empty_row = None
+				for i in range(1,len(data_rows)): # Skip the first empty row because it preceeds main column headers
+					#print(data_rows[i].findAll('th')[0].getText())
+					player_name = data_rows[i].findAll('th')[0].getText()
+				
+					if player_name == "":
+						empty_row = i
+						break
 
-				player_df = pd.DataFrame(player_data, columns=column_headers)
+				advanced_column_row = empty_row + 1
+				advanced_stat_column_headers = [th.getText() for th in data_rows[advanced_column_row].findAll('th')]				
 
-				team_totals = player_df[player_df['Starters'] == 'Team Totals']
+				# Iterate all the data rows and store the information in player_data
+				player_data = [[data_rows[i].findAll('th')[0].getText()] + [td.getText() for td in data_rows[i].findAll('td')] for i in range(len(data_rows))]
+				# Ignore first empty row and second row of column values
+				player_data = player_data[2:]
+				# Turning player data into a dataframe
+				df = pd.DataFrame(player_data, columns=main_stat_column_headers)
+				# Getting the empty row indices that divide between basic and advanced stats
+				first_empty, second_empty, third_empty = df[df['Starters'] == ''].index.tolist()
 
-				### Actual stats for prediction ###
-				# Drop advanced stats #
-				team_totals_main_stats = team_totals.dropna()
-				print(team_totals_main_stats)
+				# Getting regular stats for the first team
+				regular_stats_team_1 = df.iloc[:first_empty]
+				# Removing the useless reserves rows
+				regular_stats_team_1 = regular_stats_team_1.loc[df['Starters'] != 'Reserves']
+				# Add date column for indexing by player
+				regular_stats_team_1['Date'] = date(ds_year, ds_month, ds_day)
 
-				# Getting the teams that played (not sure if necessary)
+				# Getting regular stats for team 2
+				regular_stats_team_2 = df.iloc[second_empty+2:third_empty]
+				# Removing reserves row
+				regular_stats_team_2 = regular_stats_team_2.loc[regular_stats_team_2['Starters'] != 'Reserves']
+				# Add date column for indexing by player
+				regular_stats_team_2['Date'] = date(ds_year, ds_month, ds_day)
+
+				# 1. Handle player stats
+				# Append all players stats to our player dataframe
+				team_1_players = regular_stats_team_1['Starters'].tolist()[:-1] # ignore 'Team Totals'
+				team_2_players = regular_stats_team_2['Starters'].tolist()[:-1]
+
+				# Parse HTML to get the names of the teams
 				div = soup.findAll('div', {"class":"box"})
 				headline = x = div[0].contents[1].contents[0]
+				# Away team is always team 1, listed first
+				team_1_name = headline[:(headline.find(' at '))]
+				team_2_name = headline[(headline.find(' at ')+4):(headline.find(' Box '))]
 
-				away_team = headline[:(headline.find(' at '))]
-				home_team = headline[(headline.find(' at ')+4):(headline.find(' Box '))]
 
-				print(away_team, home_team)
+				# Construct game summary and attach to list
+				game_dictionary = {}
+				game_dictionary['Date'] = date(ds_year, ds_month, ds_day)
+				game_dictionary['Team_1'] = team_1_name
+				game_dictionary['Team_2'] = team_2_name
+				game_dictionary['Team_1_Players'] = team_1_players
+				game_dictionary['Team_2_Players'] = team_2_players
+
+
+				game_list.append(game_dictionary)
+
+
+				sleep(random.uniform(0.25, 0.5))
 
 			except:
+
+				sleep(random.uniform(0.25, 0.5))
 				continue
 
+		print(len(game_list))
+
+	print(len(game_list), "Games Processed")
+
+	try:
+		# Dump game list file for later loading
+		pickle_file_name = 'Game_List_' + str(year) + '.p'
+		with open(pickle_file_name, 'wb') as fp:
+			pickle.dump(game_list, fp)
+	except:
+		pass
+
+	return game_list
+
+# Get all player and all team data within a certain range
 # Start and end dates must be actual dates: Example: start_date = Date(2016, 10, 28)
+# Example:
+	# p_2015,s_2015 = populate_player_and_team_data(date(2015, 10, 27), date(2016, 4, 13))
+	# Then save both dataframes to csv
 def populate_player_and_team_data(start_date, end_date):
 
 	base_url_string = 'http://www.basketball-reference.com/boxscores/'
@@ -126,7 +195,7 @@ def populate_player_and_team_data(start_date, end_date):
 		ds_day = int(ds[6:])
 
 		for abbr in team_abbreviations:
-		# for abbr in ['CLE', 'POR', 'GSW']: # For testing with 10/25/2016
+		#for abbr in ['LAL', 'NOP', 'SAS']: # For testing with 10/25/2016
 
 			url_to_try = base_url_string + ds + '0' + abbr + '.html'
 
@@ -153,8 +222,9 @@ def populate_player_and_team_data(start_date, end_date):
 						break
 
 				advanced_column_row = empty_row + 1
-
 				advanced_stat_column_headers = [th.getText() for th in data_rows[advanced_column_row].findAll('th')]				
+
+
 
 				# Iterate all the data rows and store the information in player_data
 				player_data = [[data_rows[i].findAll('th')[0].getText()] + [td.getText() for td in data_rows[i].findAll('td')] for i in range(len(data_rows))]
@@ -182,6 +252,9 @@ def populate_player_and_team_data(start_date, end_date):
 				advanced_stats_team_1 = advanced_stats_team_1.loc[advanced_stats_team_1['Starters'] != 'Reserves']
 				# Drop the last 5 columns that are empty for these advanced stats
 				advanced_stats_team_1 = advanced_stats_team_1.iloc[:, :-5]
+
+				print(advanced_stat_column_headers)
+				print(advanced_stats_team_1)
 
 				# Change the column values
 				advanced_stats_team_1.columns = advanced_stat_column_headers
@@ -246,21 +319,16 @@ def populate_player_and_team_data(start_date, end_date):
 				team_stats = team_stats.append(team_2_stats)
 
 
-				sleep(random.uniform(0.5, 2.0))
+				sleep(random.uniform(0.25, 0.5))
 
 			except:
 
-				sleep(random.uniform(0.5, 2.0))
+				sleep(random.uniform(0.25, 0.5))
 				continue
-				
+
 		print(len(player_stats), len(team_stats))
 
 	print(game_count, "Games Processed")
 	return player_stats, team_stats
-
-
-# start_date = date(2016, 10, 25)
-# end_date = date(2016, 12, 6)
-# x = populate_player_dataframes(start_date, end_date)
 
 
