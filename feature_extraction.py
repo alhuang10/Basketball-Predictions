@@ -109,6 +109,76 @@ def extract_features(game_overview_dict, player_data, team_data, classifiaction_
 	return [team_1_features, team_2_features], [team_1_outcome, team_2_outcome]
 
 
+def generate_average_vectors(game_list, player_data, team_data, classifiaction_problem=True):
+
+	average_features = []
+	true_outputs = []
+
+	team_average_dictionary = {}
+
+	for team in team_data['Team Name'].unique():
+		#print(team)
+		team_average_dictionary[team] = get_team_averages(team_data, team)
+
+	print("Finished generating team averages")
+
+	for game_dictionary in game_list:
+
+		date = game_dictionary['Date']
+		team_1 = game_dictionary['Team_1']
+		team_2 = game_dictionary['Team_2']
+		team_1_players = game_dictionary['Team_1_Players']
+		team_2_players = game_dictionary['Team_2_Players']
+
+		# team_1_average_DF = get_team_averages(team_data, team_1)
+		# team_2_average_DF = get_team_averages(team_data, team_2)
+		team_1_average_DF = team_average_dictionary[team_1]
+		team_2_average_DF = team_average_dictionary[team_2]
+
+		team_1_average_data = team_1_average_DF.loc[team_1_average_DF['Date'] == date.strftime('%Y-%m-%d')]
+		team_2_average_data = team_2_average_DF.loc[team_2_average_DF['Date'] == date.strftime('%Y-%m-%d')]
+
+		if len(team_1_average_data) == 0 or len(team_1_average_data) == 0:
+			continue
+
+		team_1_average_data = team_1_average_data.dropna(axis=1)
+		team_2_average_data = team_2_average_data.dropna(axis=1)
+
+		team_1_average_values = team_1_average_data.values[0][2:]
+		team_2_average_values = team_2_average_data.values[0][2:]
+
+		team_1_average_features = team_1_average_values.tolist() + team_2_average_values.tolist()
+		team_2_average_features = team_2_average_values.tolist() + team_1_average_values.tolist()
+
+		average_features.append(team_1_average_features)
+		average_features.append(team_2_average_features)
+
+
+
+		# Generating the output values corresponding to both generated vectors
+		# Either 0/1 for win/loss classification or point spread for spread prediction (which can then be used for win loss also)
+		team_1_data = team_data.loc[(team_data['Team Name'] == team_1) & (team_data['Date'] == date.strftime('%Y-%m-%d'))]
+		team_2_data = team_data.loc[(team_data['Team Name'] == team_2) & (team_data['Date'] == date.strftime('%Y-%m-%d'))]
+	
+		team_1_score = int(team_1_data.iloc[0]['PTS'])
+		team_2_score = int(team_2_data.iloc[0]['PTS'])
+		
+		if classifiaction_problem:
+			if team_1_score > team_2_score:
+				team_1_outcome = 1
+				team_2_outcome = 0
+			else:
+				team_1_outcome = 0
+				team_2_outcome = 1
+		else:
+			team_1_outcome = team_1_score - team_2_score
+			team_2_outcome = (-1) * team_1_outcome
+
+		true_outputs.append(team_1_outcome)
+		true_outputs.append(team_2_outcome)
+
+
+	return average_features, true_outputs
 
 # Get running averages of team information for every point in the season
 ### For use when making testing model on validation/test set, which wants to simulate the game not occuring yet, and thus we use season averages up
