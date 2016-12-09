@@ -2,6 +2,7 @@ import pandas as pd
 import _pickle as pickle
 
 
+
 # Input - a list of dictionaries, each dictionary contains information for a single game, date, players, teams
 		# along with the all extracted player and team data by season
 # Output - features for each game dictionary, use scraped player and team data
@@ -43,9 +44,9 @@ def get_only_team_features(date, team_1, team_2, team_1_players, team_2_players,
 	team_1_features = team_1_values.tolist() + team_2_values.tolist()
 	team_2_features = team_2_values.tolist() + team_1_values.tolist()
 
-	print(date, team_1, team_2)
-	print(team_1_features)
-	print(team_2_features)
+	# print(date, team_1, team_2)
+	# print(team_1_features)
+	# print(team_2_features)
 
 	return team_1_features, team_2_features
 

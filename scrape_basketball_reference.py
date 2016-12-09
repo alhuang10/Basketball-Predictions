@@ -253,8 +253,8 @@ def populate_player_and_team_data(start_date, end_date):
 				# Drop the last 5 columns that are empty for these advanced stats
 				advanced_stats_team_1 = advanced_stats_team_1.iloc[:, :-5]
 
-				print(advanced_stat_column_headers)
-				print(advanced_stats_team_1)
+				# print(advanced_stat_column_headers)
+				# print(advanced_stats_team_1)
 
 				# Change the column values
 				advanced_stats_team_1.columns = advanced_stat_column_headers
