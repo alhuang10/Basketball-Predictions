@@ -80,6 +80,10 @@ def extract_features(game_overview_dict, player_data, team_data, classifiaction_
 	### Change this function here to get different feature sets ###
 	team_1_features, team_2_features = get_only_team_features(date, team_1, team_2, team_1_players, team_2_players, player_data, team_data)
 
+
+
+
+
 	if team_1_features is None:
 		return None, None
 
@@ -179,6 +183,9 @@ def generate_average_vectors(game_list, player_data, team_data, classifiaction_p
 
 
 	return average_features, true_outputs
+
+
+
 
 # Get running averages of team information for every point in the season
 ### For use when making testing model on validation/test set, which wants to simulate the game not occuring yet, and thus we use season averages up

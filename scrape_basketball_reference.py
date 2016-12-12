@@ -5,7 +5,7 @@ from datetime import date
 from datetime import timedelta
 from time import sleep
 import random
-
+import pickle
 
 # Start and end dates must be actual dates: Example: start_date = Date(2016, 10, 28)
 def generate_date_strings(start_date, end_date):
@@ -55,6 +55,7 @@ team_abbreviations=['ATL',
 
 # For each game, get the date, names of both teams, and players for both teams
 # Can use this informaiton with the player and team scraped data to generate features
+# Example: Game_List_2016 = scrape_game_overview_data(date(2016, 10, 25), date(2016, 12, 7), 2016)
 def scrape_game_overview_data(start_date, end_date, year):
 
 	base_url_string = 'http://www.basketball-reference.com/boxscores/'
