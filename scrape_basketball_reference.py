@@ -146,11 +146,11 @@ def scrape_game_overview_data(start_date, end_date, year):
 				game_list.append(game_dictionary)
 
 
-				sleep(random.uniform(0.25, 0.5))
+				sleep(random.uniform(0.1, 0.2))
 
 			except:
 
-				sleep(random.uniform(0.25, 0.5))
+				sleep(random.uniform(0.1, 0.2))
 				continue
 
 		print(len(game_list))
@@ -320,11 +320,11 @@ def populate_player_and_team_data(start_date, end_date):
 				team_stats = team_stats.append(team_2_stats)
 
 
-				sleep(random.uniform(0.25, 0.5))
+				sleep(random.uniform(0.1, 0.2))
 
 			except:
 
-				sleep(random.uniform(0.25, 0.5))
+				sleep(random.uniform(0.1, 0.2))
 				continue
 
 		print(len(player_stats), len(team_stats))

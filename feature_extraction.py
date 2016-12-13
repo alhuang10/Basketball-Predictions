@@ -1,7 +1,7 @@
 import pandas as pd
 import _pickle as pickle
 
-
+features_to_drop = ['MP_x', 'MP_y', 'PTS']
 
 # Input - a list of dictionaries, each dictionary contains information for a single game, date, players, teams
 		# along with the all extracted player and team data by season
@@ -37,7 +37,19 @@ def get_only_team_features(date, team_1, team_2, team_1_players, team_2_players,
 	team_1_data = team_1_data.dropna(axis=1)
 	team_2_data = team_2_data.dropna(axis=1)
 
-	
+
+	# Drop features we don't want
+	for feature in features_to_drop:
+		team_1_data = team_1_data.drop(feature, 1)
+		team_2_data = team_2_data.drop(feature, 1)
+
+	# team_1_data = team_1_data.drop('MP_x', 1)
+	# team_1_data = team_1_data.drop('MP_y', 1)
+	# team_1_data = team_1_data.drop('PTS', 1)
+	# team_2_data = team_2_data.drop('MP_x', 1)
+	# team_2_data = team_2_data.drop('MP_y', 1)
+
+
 	team_1_values = team_1_data.values[0][2:]
 	team_2_values = team_2_data.values[0][2:]
 
@@ -124,8 +136,6 @@ def generate_average_vectors(game_list, player_data, team_data, classifiaction_p
 		#print(team)
 		team_average_dictionary[team] = get_team_averages(team_data, team)
 
-	print("Finished generating team averages")
-
 	for game_dictionary in game_list:
 
 		date = game_dictionary['Date']
@@ -147,6 +157,11 @@ def generate_average_vectors(game_list, player_data, team_data, classifiaction_p
 
 		team_1_average_data = team_1_average_data.dropna(axis=1)
 		team_2_average_data = team_2_average_data.dropna(axis=1)
+
+		# Drop features we don't want
+		for feature in features_to_drop:
+			team_1_average_data = team_1_average_data.drop(feature, 1)
+			team_2_average_data = team_2_average_data.drop(feature, 1)
 
 		team_1_average_values = team_1_average_data.values[0][2:]
 		team_2_average_values = team_2_average_data.values[0][2:]
