@@ -1,2 +1,2 @@
 # Basketball-Predictions
-Prediction Basketball Games Using Neural Networks
+Predicting the Outcome and Spread of Basketball Games
